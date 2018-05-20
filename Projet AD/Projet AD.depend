@@ -1,8 +1,0 @@
-# depslib dependency file v1.0
-1525334289 source:c:\users\valentin\desktop\projet ad\projet ad\main.cpp
-	<iostream>
-	<fstream>
-	<string>
-	<vector>
-	<cstdlib>
-
