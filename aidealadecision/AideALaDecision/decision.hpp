@@ -11,24 +11,22 @@
 
 using namespace std;
 
-typedef struct Constraint {
+typedef struct Contrainte {
     short type;
-    int parameter;
-    map< int, int > secondPart;
+    int parametre;
     vector< int > variables;
-} Constraint;
+    map< int, int > deuxiemeParti;
+} Contrainte;
 
-typedef struct Node {
+typedef struct Noeu {
     int variable;
-    int value;
-} Node;
+    int val;
+} Noeu;
 
-typedef struct Final {
-    map< int, int > values;
-    bool check;
-} Final;
-
-
+typedef struct Finale {
+    map< int, int > valFin;
+    bool test;
+} Finale;
 
 
 class Decision {
@@ -36,26 +34,26 @@ public:
     Decision();
     Decision(string filepath);
 
-    void load(string const filepath);
-    void addDomain(int variable, int value);
-    void addConstraint(int constraint, short type, int variableDomain, int parameter = -1);
-    void showInitialState();
-    void showFinalState(Final values);
-    void InitStatistics();
-    string getTypeConstraint(int type);
-    Final naiveMethod(Node element, Final values);
-    bool checkConstraint(Final values, bool limit = false);
-    Final ReductionDomainMethod(Node element, Final values);
-    Final AssignmentOptimizationMethod(Node element, Final values);
-    Final EdgeConsistencyMethod(Node element, Final values, vector< vector< int > > domains = vector< vector< int > >());
-    vector< vector< int > > RemoveInconsistentValues(int edge, vector< vector< int > > domains);
+    void lecture(string const filepath);
+    void addDomaine(int variable, int val);
+    void addContrainte(int constraint, short type, int varDomaine, int parametre = -1);
+    void affichageEtatIni();
+    void afficherEtatFin(Finale valFin);
+    void StatIni();
+    string getTypeContrainte(int type);
+    Finale MethodeNaif(Noeu element, Finale valFin);
+    bool testContrainte(Finale valFin, bool limit = false);
+    Finale MethodeReductionDomaine(Noeu element, Finale valFin);
+    Finale MethodeOptimisation(Noeu element, Finale valFin);
+    Finale MethodeCohe(Noeu element, Finale valFin, vector< vector< int > > vectDomaines = vector< vector< int > >());
+    vector< vector< int > > RemoveInconsistentvalFin(int edge, vector< vector< int > > vectDomaines);
 
 private:
     int nbVariable;
-    vector< vector< int > > domains;
-    vector< Constraint > constraints;
-    int edgeCreated;
-    int arcIgnored;
+    vector< vector< int > > vectDomaines;
+    vector< Contrainte > vectContrainte;
+    int bordAdd;
+    int arcOsef;
 };
 
-#endif // DECISION_H_INCLUDED
+#endif

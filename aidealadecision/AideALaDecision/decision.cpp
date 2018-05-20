@@ -3,22 +3,22 @@
 
 Decision::Decision() {
     this->nbVariable = 0;
-    this->domains = vector< vector< int > > ();
-    this->constraints = vector< Constraint >();
+    this->vectDomaines = vector< vector< int > > ();
+    this->vectContrainte = vector< Contrainte >();
 }
 
 Decision::Decision(string filepath) {
     this->nbVariable = 0;
-    this->domains = vector< vector< int > > ();
-    this->constraints = vector< Constraint >();
+    this->vectDomaines = vector< vector< int > > ();
+    this->vectContrainte = vector< Contrainte >();
 
-    this->load(filepath);
-    this->showInitialState();
+    this->lecture(filepath);
+    this->affichageEtatIni();
 }
 
-void Decision::load(string const filepath) {
+void Decision::lecture(string const filepath) {
     ifstream file(filepath.c_str());
-    string line;
+    string ligneActu;
 
     if (!file) {
         cout<<"Impossible de lire le fichier : "<<filepath<<endl<<endl;
@@ -26,53 +26,52 @@ void Decision::load(string const filepath) {
     }
 
     file >> this->nbVariable;
-    this->domains = vector< vector< int > > (this->nbVariable);
-    getline(file, line);
+    this->vectDomaines = vector< vector< int > > (this->nbVariable);
+    getline(file, ligneActu);
 
-    // Saving of variables and their domain
     for (int i = 0; i < this->nbVariable; i++) {
 
-        getline(file, line);
-        istringstream iss(line);
-        int j = 0, variable = 0, tmp;
+        getline(file, ligneActu);
+        istringstream iss(ligneActu);
+        int j = 0, var = 0, cpt;
 
-        while (iss >> tmp) {
+        while (iss >> cpt) {
             if (j == 0) {
-                variable = tmp;
+                var = cpt;
             } else if (j != 1) {
-                this->addDomain(variable, tmp);
+                this->addDomaine(var, cpt);
             }
             j++;
         }
     }
 
-    // We save each constraint
     int nbConstraint = 0;
 
     while (!file.eof()) {
-        getline(file, line);
-        istringstream iss(line);
-        int j = 0, type = 0, parameter = -1, tmp, tmp2 = -1;
-        bool secondPart = false;
+        getline(file, ligneActu);
+        istringstream iss(ligneActu);
+        int j = 0, type = 0, parametre = -1;
+        int cpt = 0, cpt2 = -1;
+        bool deuxiemeParti = false;
 
-        while (iss >> tmp) {
+        while (iss >> cpt) {
             if (j == 0) {
-                type = tmp;
+                type = cpt;
             } else if ((type == 4 || type == 7) && j == 1) {
-                parameter = tmp;
-            } else if (type == 9 && tmp == -1) {
-                secondPart = true;
-            } else if (type == 9 && !secondPart) {
-                this->addConstraint(nbConstraint, type, tmp, -1);
-            } else if (type == 9 && secondPart) {
-                if (tmp2 < 0) {
-                    tmp2 = tmp;
+                parametre = cpt;
+            } else if (type == 9 && cpt == -1) {
+                deuxiemeParti = true;
+            } else if (type == 9 && !deuxiemeParti) {
+                this->addContrainte(nbConstraint, type, cpt, -1);
+            } else if (type == 9 && deuxiemeParti) {
+                if (cpt2 < 0) {
+                    cpt2 = cpt;
                 } else {
-                    this->addConstraint(nbConstraint, type, tmp2, tmp);
-                    tmp2 = -1;
+                    this->addContrainte(nbConstraint, type, cpt2, cpt);
+                    cpt2 = -1;
                 }
-            } else if (tmp != -1) {
-                this->addConstraint(nbConstraint, type, tmp, parameter);
+            } else if (cpt != -1) {
+                this->addContrainte(nbConstraint, type, cpt, parametre);
             }
             j++;
         }
@@ -80,72 +79,72 @@ void Decision::load(string const filepath) {
     }
 }
 
-void Decision::addDomain(int variable, int value){
-    this->domains[variable - 1].push_back(value);
+void Decision::addDomaine(int variable, int val){
+    this->vectDomaines[variable - 1].push_back(val);
 }
 
-void Decision::addConstraint(int constraint, short type, int variableDomain, int parameter){
+void Decision::addContrainte(int contrainte, short type, int varDomaine, int parametre){
     //We add the constraint structure containor of the domain if the contraint containor is too small
-    if (this->constraints.size() < constraint + 1) {
-        Constraint a;
+    if (this->vectContrainte.size() < contrainte + 1) {
+        Contrainte a;
         a.type = 0;
         a.variables = vector< int >();
-        this->constraints.push_back(a);
+        this->vectContrainte.push_back(a);
     }
 
-    this->constraints[constraint].type = type;
-    
-    if (type == 9 && parameter != -1) {
-        this->constraints[constraint].secondPart[variableDomain - 1] = parameter;
+    this->vectContrainte[contrainte].type = type;
+
+    if (type == 9 && parametre != -1) {
+        this->vectContrainte[contrainte].deuxiemeParti[varDomaine - 1] = parametre;
     } else {
-        this->constraints[constraint].parameter = parameter;
-        this->constraints[constraint].variables.push_back(variableDomain - 1);
+        this->vectContrainte[contrainte].parametre = parametre;
+        this->vectContrainte[contrainte].variables.push_back(varDomaine - 1);
     }
 }
 
-void Decision::showInitialState() {
+void Decision::affichageEtatIni() {
     cout<< "Variables / Valeurs possibles :" << endl << endl;
 
     for (int i = 0; i < this->nbVariable; i++) {
         cout<< i << " = { ";
 
-        for (int j = 0; j < this->domains[i].size() - 1; j++) {
-            cout<< this->domains[i][j] << ", ";
+        for (int j = 0; j < this->vectDomaines[i].size() - 1; j++) {
+            cout<< this->vectDomaines[i][j] << ", ";
         }
-        cout<< this->domains[i][this->domains[i].size() - 1] << " }" << endl;
+        cout<< this->vectDomaines[i][this->vectDomaines[i].size() - 1] << " }" << endl;
     }
 
     cout<< endl << "Contraintes :" << endl << endl;
 
-    for (int i = 0; i < this->constraints.size(); i++) {
-        cout<< i << " type : " << this->getTypeConstraint(this->constraints[i].type) << " variables : { ";
+    for (int i = 0; i < this->vectContrainte.size(); i++) {
+        cout<< i << " type : " << this->getTypeContrainte(this->vectContrainte[i].type) << " variables : { ";
 
-        for (int j = 0; j < this->constraints[i].variables.size() - 1; j++) {
-            cout<< "x" << this->constraints[i].variables[j] << ", ";
+        for (int j = 0; j < this->vectContrainte[i].variables.size() - 1; j++) {
+            cout<< "x" << this->vectContrainte[i].variables[j] << ", ";
         }
-        cout<< "x" << this->constraints[i].variables[this->constraints[i].variables.size() - 1] << " }" << endl;
+        cout<< "x" << this->vectContrainte[i].variables[this->vectContrainte[i].variables.size() - 1] << " }" << endl;
     }
 }
 
-void Decision::showFinalState(Final values) {
-    if (!values.check) {
+void Decision::afficherEtatFin(Finale valFin) {
+    if (!valFin.test) {
         cout<< endl << "Aucune solution aux contraintes posees !"<< endl;
     } else {
-        cout<< endl << "Valeurs finales qui correspondent aux contraintes :" << endl;
-        for (int i = 0; i < values.values.size(); i++) {
-            cout<< i << " = { " << values.values[i] << " }" << endl;
+        cout<< endl << "Valeurs Finalees qui correspondent aux contraintes :" << endl;
+        for (int i = 0; i < valFin.valFin.size(); i++) {
+            cout<< i << " = { " << valFin.valFin[i] << " }" << endl;
         }
     }
 
-    cout<< endl << "Statistiques : " << endl << this->edgeCreated << " noeuds crees" << endl << this->arcIgnored << " branches ignorees" << endl;
+    cout<< endl << "Statistiques : " << endl << this->bordAdd << " noeuds crees" << endl << this->arcOsef << " branches ignorees" << endl;
 }
 
-void Decision::InitStatistics() {
-    this->edgeCreated = 0;
-    this->arcIgnored = 0;
+void Decision::StatIni() {
+    this->bordAdd = 0;
+    this->arcOsef = 0;
 }
 
-string Decision::getTypeConstraint(int type) {
+string Decision::getTypeContrainte(int type) {
     switch (type) {
         case 1:
             return "=";
@@ -171,63 +170,63 @@ string Decision::getTypeConstraint(int type) {
 }
 
 
-Final Decision::naiveMethod(Node element, Final values) {
+Finale Decision::MethodeNaif(Noeu element, Finale valFin) {
 
-    //If it's a leaf we check the constraint, We know it's a leaf because the last variable is at the bottom of the tree
+    //If it's a leaf we test the constraint, We know it's a leaf because the last variable is at the bottom of the tree
     if (element.variable == this->nbVariable - 1) {
-        values.check = this->checkConstraint(values);
-        return values;
+        valFin.test = this->testContrainte(valFin);
+        return valFin;
     }
 
     //We get the nextVariable
     const int nextVariable = element.variable + 1;
 
-    //For each value of the domain of the variable, we create a node and we make a recursive call, if the return of the Final values is positive we return this couple of values because it's a solution
-    for (int i = 0; i < this->domains[nextVariable].size(); i++) {
-        Node child;
-        Final temp;
+    //For each val of the domain of the variable, we create a Noeu and we make a recursive call, if the return of the Finale valFin is positive we return this couple of valFin because it's a solution
+    for (int i = 0; i < this->vectDomaines[nextVariable].size(); i++) {
+        Noeu enfant;
+        Finale fin;
 
-        child.variable = nextVariable;
-        child.value = this->domains[nextVariable][i];
-        temp = values;
-        temp.values[nextVariable] = child.value;
+        enfant.variable = nextVariable;
+        enfant.val = this->vectDomaines[nextVariable][i];
+        fin = valFin;
+        fin.valFin[nextVariable] = enfant.val;
 
-        temp = naiveMethod(child, temp);
-        this->edgeCreated++;
+        fin = MethodeNaif(enfant, fin);
+        this->bordAdd++;
 
-        if (temp.check) {
-            return temp;
+        if (fin.test) {
+            return fin;
         }
     }
 
-    //If we don't have already exit it's because there is no solution on this node
-    values.check = false;
-    return values;
+    //If we don't have already exit it's because there is no solution on this Noeu
+    valFin.test = false;
+    return valFin;
 }
 
 
-bool Decision::checkConstraint(Final values, bool limit) {
+bool Decision::testContrainte(Finale valFin, bool limit) {
 
-    // We check for every constraint on the values
-    for (int i = 0; i < this->constraints.size(); i++) {
-        Constraint constraint = this->constraints[i];
-        int tmp, sum;
-        bool skip, skip2;
+    // We test for every constraint on the valFin
+    for (int i = 0; i < this->vectContrainte.size(); i++) {
+        Contrainte contrainte = this->vectContrainte[i];
+        int tmp, somme;
+        bool bool1, bool2;
 
         // Depending of the type of constraint
-        switch (constraint.type) {
+        switch (contrainte.type) {
 
-            // If it's an equal constraint, we check if the values are equals
+            // If it's an equal constraint, we test if the valFin are equals
             case 1:
-                for (int j = 0; j < constraint.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (limit && values.values.find(constraint.variables[j]) == values.values.end()) {
+                for (int j = 0; j < contrainte.variables.size(); j++) {
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
                         continue;
                     }
 
-                    for (int k = 0; k < constraint.variables.size(); k++) {
-                        // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                        if (limit && values.values.find(constraint.variables[k]) == values.values.end()) {
+                    for (int k = 0; k < contrainte.variables.size(); k++) {
+                        // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                        if (limit && valFin.valFin.find(contrainte.variables[k]) == valFin.valFin.end()) {
                             continue;
                         }
 
@@ -235,24 +234,24 @@ bool Decision::checkConstraint(Final values, bool limit) {
                             continue;
                         }
 
-                        if (values.values[constraint.variables[j]] != values.values[constraint.variables[k]]) {
+                        if (valFin.valFin[contrainte.variables[j]] != valFin.valFin[contrainte.variables[k]]) {
                             return false;
                         }
                     }
                 }
                 break;
 
-            // If it's an not equal constraint, we check if the values are not equals
+            // If it's an not equal constraint, we test if the valFin are not equals
             case 2:
-                for (int j = 0; j < constraint.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (limit && values.values.find(constraint.variables[j]) == values.values.end()) {
+                for (int j = 0; j < contrainte.variables.size(); j++) {
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
                         continue;
                     }
 
-                    for (int k = 0; k < constraint.variables.size(); k++) {
-                        // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                        if (limit && values.values.find(constraint.variables[k]) == values.values.end()) {
+                    for (int k = 0; k < contrainte.variables.size(); k++) {
+                        // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                        if (limit && valFin.valFin.find(contrainte.variables[k]) == valFin.valFin.end()) {
                             continue;
                         }
 
@@ -260,139 +259,139 @@ bool Decision::checkConstraint(Final values, bool limit) {
                             continue;
                         }
 
-                        if (values.values[constraint.variables[j]] == values.values[constraint.variables[k]]) {
+                        if (valFin.valFin[contrainte.variables[j]] == valFin.valFin[contrainte.variables[k]]) {
                             return false;
                         }
                     }
                 }
                 break;
 
-            // If it's an inferior constraint, we check if the values are inferior
+            // If it's an inferior constraint, we test if the valFin are inferior
             case 3:
-                // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                if (!limit || (values.values.find(constraint.variables[0]) != values.values.end() && values.values.find(constraint.variables[1]) != values.values.end())) {
-                    if (values.values[constraint.variables[0]] > values.values[constraint.variables[1]]) {
+                // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                if (!limit || (valFin.valFin.find(contrainte.variables[0]) != valFin.valFin.end() && valFin.valFin.find(contrainte.variables[1]) != valFin.valFin.end())) {
+                    if (valFin.valFin[contrainte.variables[0]] > valFin.valFin[contrainte.variables[1]]) {
                         return false;
                     }
                 }
                 break;
 
-            // Sum of all variables, we check if the total is equal to the parameter
+            // Sum of all variables, we test if the total is equal to the parameter
             case 4:
                 tmp = 0;
-                skip = false;
-                for (int j = 0; j < constraint.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (limit && values.values.find(constraint.variables[j]) == values.values.end()) {
-                        skip = true;
+                bool1 = false;
+                for (int j = 0; j < contrainte.variables.size(); j++) {
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
+                        bool1 = true;
                         continue;
                     }
-                    tmp += values.values[constraint.variables[j]];
+                    tmp += valFin.valFin[contrainte.variables[j]];
                 }
 
-                if (!skip) {
-                    if (tmp != constraint.parameter) {
+                if (!bool1) {
+                    if (tmp != contrainte.parametre) {
                         return false;
                     }
                 } else {
-                    if (tmp > constraint.parameter) {
+                    if (tmp > contrainte.parametre) {
                         return false;
                     }
                 }
 
                 break;
 
-            // If it's a strict inferior constraint, we check if the values are inferior
+            // If it's a strict inferior constraint, we test if the valFin are inferior
             case 5:
-                // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                if (!limit || (values.values.find(constraint.variables[0]) != values.values.end() && values.values.find(constraint.variables[1]) != values.values.end())) {
-                    if (values.values[constraint.variables[0]] >= values.values[constraint.variables[1]]) {
+                // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                if (!limit || (valFin.valFin.find(contrainte.variables[0]) != valFin.valFin.end() && valFin.valFin.find(contrainte.variables[1]) != valFin.valFin.end())) {
+                    if (valFin.valFin[contrainte.variables[0]] >= valFin.valFin[contrainte.variables[1]]) {
                         return false;
                     }
                 }
                 break;
 
-            // If it's a strict superior constraint, we check if the values are superior
+            // If it's a strict superior constraint, we test if the valFin are superior
             case 6:
-                // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                if (!limit || (values.values.find(constraint.variables[0]) != values.values.end() && values.values.find(constraint.variables[1]) != values.values.end())) {
-                    if (values.values[constraint.variables[0]] <= values.values[constraint.variables[1]]) {
+                // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                if (!limit || (valFin.valFin.find(contrainte.variables[0]) != valFin.valFin.end() && valFin.valFin.find(contrainte.variables[1]) != valFin.valFin.end())) {
+                    if (valFin.valFin[contrainte.variables[0]] <= valFin.valFin[contrainte.variables[1]]) {
                         return false;
                     }
                 }
                 break;
 
-            // Sum of all variables, we check if the total is inferior to the parameter
+            // Sum of all variables, we test if the total is inferior to the parametre
             case 7:
                 tmp = 0;
-                skip = false;
-                for (int j = 0; j < constraint.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (limit && values.values.find(constraint.variables[j]) == values.values.end()) {
-                        skip = true;
+                bool1 = false;
+                for (int j = 0; j < contrainte.variables.size(); j++) {
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
+                        bool1 = true;
                         continue;
                     }
-                    tmp += values.values[constraint.variables[j]];
+                    tmp += valFin.valFin[contrainte.variables[j]];
                 }
 
-                if (!skip) {
-                    if (tmp >= constraint.parameter) {
+                if (!bool1) {
+                    if (tmp >= contrainte.parametre) {
                         return false;
                     }
                 } else {
-                    if (tmp >= constraint.parameter) {
+                    if (tmp >= contrainte.parametre) {
                         return false;
                     }
                 }
 
                 break;
-                
-            // If it's a superior constraint, we check if the values are inferior
+
+            // If it's a superior constraint, we test if the valFin are inferior
             case 8:
-                // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                if (!limit || (values.values.find(constraint.variables[0]) != values.values.end() && values.values.find(constraint.variables[1]) != values.values.end())) {
-                    if (values.values[constraint.variables[0]] < values.values[constraint.variables[1]]) {
+                // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                if (!limit || (valFin.valFin.find(contrainte.variables[0]) != valFin.valFin.end() && valFin.valFin.find(contrainte.variables[1]) != valFin.valFin.end())) {
+                    if (valFin.valFin[contrainte.variables[0]] < valFin.valFin[contrainte.variables[1]]) {
                         return false;
                     }
                 }
                 break;
-                
-                
-            // Sum of all variables, we check if the total is equal to the sum of the secondPart with a ponderation
+
+
+            // Sum of all variables, we test if the total is equal to the sum of the deuxiemeParti with a ponderation
             case 9:
                 tmp = 0;
-                sum = 0;
-                skip = false;
-                skip2 = false;
-                for (int j = 0; j < constraint.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (limit && values.values.find(constraint.variables[j]) == values.values.end()) {
-                        skip = true;
+                somme = 0;
+                bool1 = false;
+                bool2 = false;
+                for (int j = 0; j < contrainte.variables.size(); j++) {
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
+                        bool1 = true;
                         continue;
                     }
-                    tmp += values.values[constraint.variables[j]];
+                    tmp += valFin.valFin[contrainte.variables[j]];
                 }
-                
-                for (const auto &element : constraint.secondPart) {
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (limit && values.values.find(element.first) == values.values.end()) {
-                        skip2 = true;
+
+                for (const auto &element : contrainte.deuxiemeParti) {
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (limit && valFin.valFin.find(element.first) == valFin.valFin.end()) {
+                        bool2 = true;
                         continue;
                     }
-                    sum += values.values[element.first] * element.second;
+                    somme += valFin.valFin[element.first] * element.second;
 
                 }
-                
-                if (!skip && ! skip2) {
-                    if (tmp != sum) {
+
+                if (!bool1 && ! bool2) {
+                    if (tmp != somme) {
                         return false;
                     }
-                } else if (!skip2) {
-                    if (tmp > sum) {
+                } else if (!bool2) {
+                    if (tmp > somme) {
                         return false;
                     }
                 }
-                
+
                 break;
 
 
@@ -406,50 +405,50 @@ bool Decision::checkConstraint(Final values, bool limit) {
     return true;
 }
 
-Final Decision::ReductionDomainMethod(Node element, Final values) {
-    //If it's a leaf we check the constraint, We know it's a leaf because the last variable is at the bottom of the tree. And it's a solution because we pass all the reduction of domain
+Finale Decision::MethodeReductionDomaine(Noeu element, Finale valFin) {
+    //If it's a leaf we test the constraint, We know it's a leaf because the last variable is at the bottom of the tree. And it's a solution because we pass all the reduction of domain
     if (element.variable == this->nbVariable - 1) {
-        values.check = true;
-        return values;
+        valFin.test = true;
+        return valFin;
     }
 
     //We get the nextVariable
     const int nextVariable = element.variable + 1;
-    Node child;
-    Final temp;
+    Noeu child;
+    Finale temp;
     child.variable = nextVariable;
-    temp = values;
+    temp = valFin;
 
-    //For each value of the domain of the variable, we create a node and we check the constraint we can already test, if all the constraints are satisfy we can make a recursive call
-    for (int i = 0; i < this->domains[nextVariable].size(); i++) {
+    //For each val of the domain of the variable, we create a Noeu and we test the constraint we can already test, if all the vectContrainte are satisfy we can make a recursive call
+    for (int i = 0; i < this->vectDomaines[nextVariable].size(); i++) {
 
-        child.value = this->domains[nextVariable][i];
-        temp.values[nextVariable] = child.value;
+        child.val = this->vectDomaines[nextVariable][i];
+        temp.valFin[nextVariable] = child.val;
 
-        if (nextVariable == 0 || this->checkConstraint(temp, true)) {
-            temp = ReductionDomainMethod(child, temp);
-            this->edgeCreated++;
+        if (nextVariable == 0 || this->testContrainte(temp, true)) {
+            temp = MethodeReductionDomaine(child, temp);
+            this->bordAdd++;
 
-            if (temp.check) {
+            if (temp.test) {
                 return temp;
             }
         } else {
-            this->arcIgnored++;
+            this->arcOsef++;
         }
 
 
     }
 
-    //If we don't have already exit it's because there is no solution on this node
-    values.check = false;
-    return values;
+    //If we don't have already exit it's because there is no solution on this Noeu
+    valFin.test = false;
+    return valFin;
 }
 
-Final Decision::AssignmentOptimizationMethod(Node element, Final values) {
-    //If it's a leaf we check the constraint, We know it's a leaf because the last variable is at the bottom of the tree. And it's a solution because we pass all the reduction of domain
-    if (values.values.size() == this->nbVariable) {
-        values.check = true;
-        return values;
+Finale Decision::MethodeOptimisation(Noeu element, Finale valFin) {
+    //If it's a leaf we test the constraint, We know it's a leaf because the last variable is at the bottom of the tree. And it's a solution because we pass all the reduction of domain
+    if (valFin.valFin.size() == this->nbVariable) {
+        valFin.test = true;
+        return valFin;
     }
 
     int min = -1;
@@ -457,55 +456,55 @@ Final Decision::AssignmentOptimizationMethod(Node element, Final values) {
 
     //We get the nextVariable
     for (int i = 0; i < this->nbVariable; i++) {
-        if (values.values.find(i) == values.values.end() ) {
-            if (min == -1 || min > this->domains[i].size()) {
-                min = (int) this->domains[i].size();
+        if (valFin.valFin.find(i) == valFin.valFin.end() ) {
+            if (min == -1 || min > this->vectDomaines[i].size()) {
+                min = (int) this->vectDomaines[i].size();
                 nextVariable = i;
             }
         }
     }
 
-    Node child;
-    Final temp;
+    Noeu child;
+    Finale temp;
     child.variable = nextVariable;
-    temp = values;
+    temp = valFin;
 
-    //For each value of the domain of the variable, we create a node and we check the constraint we can already test, if all the constraints are satisfy we can make a recursive call
-    for (int i = 0; i < this->domains[nextVariable].size(); i++) {
+    //For each val of the domain of the variable, we create a Noeu and we test the constraint we can already test, if all the vectContrainte are satisfy we can make a recursive call
+    for (int i = 0; i < this->vectDomaines[nextVariable].size(); i++) {
 
-        child.value = this->domains[nextVariable][i];
-        temp.values[nextVariable] = child.value;
+        child.val = this->vectDomaines[nextVariable][i];
+        temp.valFin[nextVariable] = child.val;
 
-        if (this->checkConstraint(temp, true)) {
-            temp = AssignmentOptimizationMethod(child, temp);
-            this->edgeCreated++;
+        if (this->testContrainte(temp, true)) {
+            temp = MethodeOptimisation(child, temp);
+            this->bordAdd++;
 
-            if (temp.check) {
+            if (temp.test) {
                 return temp;
             }
         } else {
-            this->arcIgnored++;
+            this->arcOsef++;
         }
 
 
     }
 
-    //If we don't have already exit it's because there is no solution on this node
-    values.check = false;
-    return values;
+    //If we don't have already exit it's because there is no solution on this Noeu
+    valFin.test = false;
+    return valFin;
 }
 
-Final Decision::EdgeConsistencyMethod(Node element, Final values, vector< vector< int > > domains) {
+Finale Decision::MethodeCohe(Noeu element, Finale valFin, vector< vector< int > > vectDomaines) {
 
-    //If it's a leaf we check the constraint, We know it's a leaf because the last variable is at the bottom of the tree. And it's a solution because we pass all the reduction of domain
-    if (values.values.size() == this->nbVariable) {
-        values.check = true;
-        return values;
+    //If it's a leaf we test the constraint, We know it's a leaf because the last variable is at the bottom of the tree. And it's a solution because we pass all the reduction of domain
+    if (valFin.valFin.size() == this->nbVariable) {
+        valFin.test = true;
+        return valFin;
     }
 
-    // If we don't have a domains it means that it's the first time the function is call
-    if (domains.size() == 0) {
-        domains = this->domains;
+    // If we don't have a vectDomaines it means that it's the first time the function is call
+    if (vectDomaines.size() == 0) {
+        vectDomaines = this->vectDomaines;
     }
 
     int min = -1;
@@ -514,64 +513,64 @@ Final Decision::EdgeConsistencyMethod(Node element, Final values, vector< vector
     //We get the nextVariable
     for (int i = 0; i < this->nbVariable; i++) {
 
-        if (domains[i].size() == 0) {
-            values.check = false;
-            return values;
+        if (vectDomaines[i].size() == 0) {
+            valFin.test = false;
+            return valFin;
         }
 
-        if (values.values.find(i) == values.values.end() ) {
-            if (min == -1 || min > domains[i].size()) {
-                min = (int) domains[i].size();
+        if (valFin.valFin.find(i) == valFin.valFin.end() ) {
+            if (min == -1 || min > vectDomaines[i].size()) {
+                min = (int) vectDomaines[i].size();
                 nextVariable = i;
             }
         }
     }
 
-    Node child;
-    Final temp;
+    Noeu child;
+    Finale temp;
     child.variable = nextVariable;
-    temp = values;
+    temp = valFin;
 
-    // We make a copy of the domain in the case we don't find the good values at the first shoot (to do a backtracking)
-    vector< vector< int > > old = domains;
+    // We make a copy of the domain in the case we don't find the good valFin at the first shoot (to do a backtracking)
+    vector< vector< int > > old = vectDomaines;
 
-    //For each value of the domain of the variable, we create a node and we check the constraint we can already test, if all the constraints are satisfy we can make a recursive call
+    //For each val of the domain of the variable, we create a Noeu and we test the constraint we can already test, if all the vectContrainte are satisfy we can make a recursive call
     for (int i = 0; i < old[nextVariable].size(); i++) {
 
-        child.value = old[nextVariable][i];
-        temp.values[nextVariable] = child.value;
+        child.val = old[nextVariable][i];
+        temp.valFin[nextVariable] = child.val;
 
-        // We reduce the domain of the variable at only the value we're testing
-        domains[nextVariable] = vector< int >();
-        domains[nextVariable].push_back(old[nextVariable][i]);
+        // We reduce the domain of the variable at only the val we're testing
+        vectDomaines[nextVariable] = vector< int >();
+        vectDomaines[nextVariable].push_back(old[nextVariable][i]);
 
-        // We reduce the domain of all the neighboorhood of the variable, depending on the constraints
-        domains = this->RemoveInconsistentValues(nextVariable, domains);
+        // We reduce the domain of all the neighboorhood of the variable, depending on the vectContrainte
+        vectDomaines = this->RemoveInconsistentvalFin(nextVariable, vectDomaines);
 
-        // We check all the constraints (especially sum that are not tested in the removeinconsistenvalues)
-        if (this->checkConstraint(temp, true)) {
-            temp = EdgeConsistencyMethod(child, temp, domains);
-            this->edgeCreated++;
+        // We test all the vectContrainte (especially sum that are not tested in the removeinconsistenvalFin)
+        if (this->testContrainte(temp, true)) {
+            temp = MethodeCohe(child, temp, vectDomaines);
+            this->bordAdd++;
 
-            if (temp.check) {
+            if (temp.test) {
                 return temp;
             }
         } else {
-            this->arcIgnored++;
+            this->arcOsef++;
         }
 
-        // We do backtracking in case the constraints in the sub-tree was not fullfill
-        domains = old;
+        // We do backtracking in case the vectContrainte in the sub-tree was not fullfill
+        vectDomaines = old;
 
 
     }
 
-    //If we don't have already exit it's because there is no solution on this node
-    values.check = false;
-    return values;
+    //If we don't have already exit it's because there is no solution on this Noeu
+    valFin.test = false;
+    return valFin;
 }
 
-vector< vector< int > > Decision::RemoveInconsistentValues(int edge, vector< vector< int > > domains) {
+vector< vector< int > > Decision::RemoveInconsistentvalFin(int edge, vector< vector< int > > vectDomaines) {
 
     vector< int > fifo;
     fifo.push_back(edge);
@@ -579,51 +578,51 @@ vector< vector< int > > Decision::RemoveInconsistentValues(int edge, vector< vec
     while (!fifo.empty()) {
 
 
-        // We check for every constraint on the values
-        for (int i = 0; i < this->constraints.size(); i++) {
-            Constraint constraint = this->constraints[i];
+        // We test for every constraint on the valFin
+        for (int i = 0; i < this->vectContrainte.size(); i++) {
+            Contrainte contrainte = this->vectContrainte[i];
             int current = fifo.front();
             int tmp, min, minCurrent;
 
-            // If the constraint doesn't include the edge we're checking we pass this constraint
-            if (find(constraint.variables.begin(), constraint.variables.end(), current) == constraint.variables.end()) {
+            // If the constraint doesn't include the edge we're testing we pass this constraint
+            if (find(contrainte.variables.begin(), contrainte.variables.end(), current) == contrainte.variables.end()) {
                 continue;
             }
 
             // Depending of the type of constraint
-            switch (constraint.type) {
+            switch (contrainte.type) {
 
                 // If it's an equal constraint
                 case 1:
-                    // We're checkin for all the constraints of variables
-                    for (int j = 0; j < constraint.variables.size(); j++) {
-                        for (int k = 0; k < constraint.variables.size(); k++) {
+                    // We're testin for all the vectContrainte of variables
+                    for (int j = 0; j < contrainte.variables.size(); j++) {
+                        for (int k = 0; k < contrainte.variables.size(); k++) {
 
-                            // We check that one variable is the current variable
-                            if (j == k || (constraint.variables[j] != current && constraint.variables[k] != current)) {
+                            // We test that one variable is the current variable
+                            if (j == k || (contrainte.variables[j] != current && contrainte.variables[k] != current)) {
                                 continue;
                             }
 
-                            // We check for the entire domain of each
-                            for (int l = 0; l < domains[constraint.variables[j]].size(); l++) {
-                                for (int m = 0; m < domains[constraint.variables[k]].size(); m++) {
+                            // We test for the entire domain of each
+                            for (int l = 0; l < vectDomaines[contrainte.variables[j]].size(); l++) {
+                                for (int m = 0; m < vectDomaines[contrainte.variables[k]].size(); m++) {
 
                                     // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
-                                    if (domains[constraint.variables[j]][l] != domains[constraint.variables[k]][m]) {
+                                    if (vectDomaines[contrainte.variables[j]][l] != vectDomaines[contrainte.variables[k]][m]) {
 
-                                        if (constraint.variables[j] == current) {
-                                            domains[constraint.variables[k]].erase(domains[constraint.variables[k]].begin() + m);
+                                        if (contrainte.variables[j] == current) {
+                                            vectDomaines[contrainte.variables[k]].erase(vectDomaines[contrainte.variables[k]].begin() + m);
                                             m--;
 
-                                            if (find(fifo.begin(), fifo.end(), constraint.variables[k]) == fifo.end()) {
-                                                fifo.push_back(constraint.variables[k]);
+                                            if (find(fifo.begin(), fifo.end(), contrainte.variables[k]) == fifo.end()) {
+                                                fifo.push_back(contrainte.variables[k]);
                                             }
                                         } else {
-                                            domains[constraint.variables[j]].erase(domains[constraint.variables[j]].begin() + l);
+                                            vectDomaines[contrainte.variables[j]].erase(vectDomaines[contrainte.variables[j]].begin() + l);
                                             l--;
 
-                                            if (find(fifo.begin(), fifo.end(), constraint.variables[j]) == fifo.end()) {
-                                                fifo.push_back(constraint.variables[j]);
+                                            if (find(fifo.begin(), fifo.end(), contrainte.variables[j]) == fifo.end()) {
+                                                fifo.push_back(contrainte.variables[j]);
                                             }
                                         }
 
@@ -638,35 +637,35 @@ vector< vector< int > > Decision::RemoveInconsistentValues(int edge, vector< vec
 
                 // If it's a not equal constraint
                 case 2:
-                    // We're checkin for all the constraints of variables
-                    for (int j = 0; j < constraint.variables.size(); j++) {
-                        for (int k = 0; k < constraint.variables.size(); k++) {
+                    // We're testin for all the vectContrainte of variables
+                    for (int j = 0; j < contrainte.variables.size(); j++) {
+                        for (int k = 0; k < contrainte.variables.size(); k++) {
 
-                            // We check that one variable is the current variable
-                            if (j == k || (constraint.variables[j] != current && constraint.variables[k] != current)) {
+                            // We test that one variable is the current variable
+                            if (j == k || (contrainte.variables[j] != current && contrainte.variables[k] != current)) {
                                 continue;
                             }
 
-                            // We check for the entire domain of each
-                            for (int l = 0; l < domains[constraint.variables[j]].size(); l++) {
-                                for (int m = 0; m < domains[constraint.variables[k]].size(); m++) {
+                            // We test for the entire domain of each
+                            for (int l = 0; l < vectDomaines[contrainte.variables[j]].size(); l++) {
+                                for (int m = 0; m < vectDomaines[contrainte.variables[k]].size(); m++) {
 
                                     // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
-                                    if (domains[constraint.variables[j]][l] == domains[constraint.variables[k]][m]) {
+                                    if (vectDomaines[contrainte.variables[j]][l] == vectDomaines[contrainte.variables[k]][m]) {
 
-                                        if (constraint.variables[j] == current) {
-                                            domains[constraint.variables[k]].erase(domains[constraint.variables[k]].begin() + m);
+                                        if (contrainte.variables[j] == current) {
+                                            vectDomaines[contrainte.variables[k]].erase(vectDomaines[contrainte.variables[k]].begin() + m);
                                             m--;
 
-                                            if (find(fifo.begin(), fifo.end(), constraint.variables[k]) == fifo.end()) {
-                                                fifo.push_back(constraint.variables[k]);
+                                            if (find(fifo.begin(), fifo.end(), contrainte.variables[k]) == fifo.end()) {
+                                                fifo.push_back(contrainte.variables[k]);
                                             }
                                         } else {
-                                            domains[constraint.variables[j]].erase(domains[constraint.variables[j]].begin() + l);
+                                            vectDomaines[contrainte.variables[j]].erase(vectDomaines[contrainte.variables[j]].begin() + l);
                                             l--;
 
-                                            if (find(fifo.begin(), fifo.end(), constraint.variables[j]) == fifo.end()) {
-                                                fifo.push_back(constraint.variables[j]);
+                                            if (find(fifo.begin(), fifo.end(), contrainte.variables[j]) == fifo.end()) {
+                                                fifo.push_back(contrainte.variables[j]);
                                             }
                                         }
 
@@ -680,29 +679,29 @@ vector< vector< int > > Decision::RemoveInconsistentValues(int edge, vector< vec
 
                 // If it's an inferior constraint
                 case 3:
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (constraint.variables[0] == current || constraint.variables[1] == current) {
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (contrainte.variables[0] == current || contrainte.variables[1] == current) {
 
-                        // We check for the entire domain of each variable
-                        for (int l = 0; l < domains[constraint.variables[0]].size(); l++) {
-                            for (int m = 0; m < domains[constraint.variables[1]].size(); m++) {
+                        // We test for the entire domain of each variable
+                        for (int l = 0; l < vectDomaines[contrainte.variables[0]].size(); l++) {
+                            for (int m = 0; m < vectDomaines[contrainte.variables[1]].size(); m++) {
 
                                 // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
-                                if (domains[constraint.variables[0]][l] > domains[constraint.variables[1]][m]) {
+                                if (vectDomaines[contrainte.variables[0]][l] > vectDomaines[contrainte.variables[1]][m]) {
 
-                                    if (constraint.variables[0] == current) {
-                                        domains[constraint.variables[1]].erase(domains[constraint.variables[1]].begin() + m);
+                                    if (contrainte.variables[0] == current) {
+                                        vectDomaines[contrainte.variables[1]].erase(vectDomaines[contrainte.variables[1]].begin() + m);
                                         m--;
 
-                                        if (find(fifo.begin(), fifo.end(), constraint.variables[1]) == fifo.end()) {
-                                            fifo.push_back(constraint.variables[1]);
+                                        if (find(fifo.begin(), fifo.end(), contrainte.variables[1]) == fifo.end()) {
+                                            fifo.push_back(contrainte.variables[1]);
                                         }
                                     } else {
-                                        domains[constraint.variables[0]].erase(domains[constraint.variables[0]].begin() + l);
+                                        vectDomaines[contrainte.variables[0]].erase(vectDomaines[contrainte.variables[0]].begin() + l);
                                         l--;
 
-                                        if (find(fifo.begin(), fifo.end(), constraint.variables[0]) == fifo.end()) {
-                                            fifo.push_back(constraint.variables[0]);
+                                        if (find(fifo.begin(), fifo.end(), contrainte.variables[0]) == fifo.end()) {
+                                            fifo.push_back(contrainte.variables[0]);
                                         }
                                     }
 
@@ -716,29 +715,29 @@ vector< vector< int > > Decision::RemoveInconsistentValues(int edge, vector< vec
 
                 // If it's a strict inferior constraint
                 case 5:
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (constraint.variables[0] == current || constraint.variables[1] == current) {
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (contrainte.variables[0] == current || contrainte.variables[1] == current) {
 
-                        // We check for the entire domain of each variable
-                        for (int l = 0; l < domains[constraint.variables[0]].size(); l++) {
-                            for (int m = 0; m < domains[constraint.variables[1]].size(); m++) {
+                        // We test for the entire domain of each variable
+                        for (int l = 0; l < vectDomaines[contrainte.variables[0]].size(); l++) {
+                            for (int m = 0; m < vectDomaines[contrainte.variables[1]].size(); m++) {
 
                                 // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
-                                if (domains[constraint.variables[0]][l] >= domains[constraint.variables[1]][m]) {
+                                if (vectDomaines[contrainte.variables[0]][l] >= vectDomaines[contrainte.variables[1]][m]) {
 
-                                    if (constraint.variables[0] == current) {
-                                        domains[constraint.variables[1]].erase(domains[constraint.variables[1]].begin() + m);
+                                    if (contrainte.variables[0] == current) {
+                                        vectDomaines[contrainte.variables[1]].erase(vectDomaines[contrainte.variables[1]].begin() + m);
                                         m--;
 
-                                        if (find(fifo.begin(), fifo.end(), constraint.variables[1]) == fifo.end()) {
-                                            fifo.push_back(constraint.variables[1]);
+                                        if (find(fifo.begin(), fifo.end(), contrainte.variables[1]) == fifo.end()) {
+                                            fifo.push_back(contrainte.variables[1]);
                                         }
                                     } else {
-                                        domains[constraint.variables[0]].erase(domains[constraint.variables[0]].begin() + l);
+                                        vectDomaines[contrainte.variables[0]].erase(vectDomaines[contrainte.variables[0]].begin() + l);
                                         l--;
 
-                                        if (find(fifo.begin(), fifo.end(), constraint.variables[0]) == fifo.end()) {
-                                            fifo.push_back(constraint.variables[0]);
+                                        if (find(fifo.begin(), fifo.end(), contrainte.variables[0]) == fifo.end()) {
+                                            fifo.push_back(contrainte.variables[0]);
                                         }
                                     }
 
@@ -752,29 +751,29 @@ vector< vector< int > > Decision::RemoveInconsistentValues(int edge, vector< vec
 
                 // If it's a strict superior constraint
                 case 6:
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (constraint.variables[0] == current || constraint.variables[1] == current) {
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (contrainte.variables[0] == current || contrainte.variables[1] == current) {
 
-                        // We check for the entire domain of each variable
-                        for (int l = 0; l < domains[constraint.variables[0]].size(); l++) {
-                            for (int m = 0; m < domains[constraint.variables[1]].size(); m++) {
+                        // We test for the entire domain of each variable
+                        for (int l = 0; l < vectDomaines[contrainte.variables[0]].size(); l++) {
+                            for (int m = 0; m < vectDomaines[contrainte.variables[1]].size(); m++) {
 
                                 // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
-                                if (domains[constraint.variables[0]][l] <= domains[constraint.variables[1]][m]) {
+                                if (vectDomaines[contrainte.variables[0]][l] <= vectDomaines[contrainte.variables[1]][m]) {
 
-                                    if (constraint.variables[0] == current) {
-                                        domains[constraint.variables[1]].erase(domains[constraint.variables[1]].begin() + m);
+                                    if (contrainte.variables[0] == current) {
+                                        vectDomaines[contrainte.variables[1]].erase(vectDomaines[contrainte.variables[1]].begin() + m);
                                         m--;
 
-                                        if (find(fifo.begin(), fifo.end(), constraint.variables[1]) == fifo.end()) {
-                                            fifo.push_back(constraint.variables[1]);
+                                        if (find(fifo.begin(), fifo.end(), contrainte.variables[1]) == fifo.end()) {
+                                            fifo.push_back(contrainte.variables[1]);
                                         }
                                     } else {
-                                        domains[constraint.variables[0]].erase(domains[constraint.variables[0]].begin() + l);
+                                        vectDomaines[contrainte.variables[0]].erase(vectDomaines[contrainte.variables[0]].begin() + l);
                                         l--;
 
-                                        if (find(fifo.begin(), fifo.end(), constraint.variables[0]) == fifo.end()) {
-                                            fifo.push_back(constraint.variables[0]);
+                                        if (find(fifo.begin(), fifo.end(), contrainte.variables[0]) == fifo.end()) {
+                                            fifo.push_back(contrainte.variables[0]);
                                         }
                                     }
 
@@ -785,68 +784,68 @@ vector< vector< int > > Decision::RemoveInconsistentValues(int edge, vector< vec
 
                     }
                     break;
-                    
-                    
+
+
                 // If it's a inferior sum constraint
                 case 7:
                     tmp = 0;
                     minCurrent = -1;
-                    
-                    for (int j = 0; j < constraint.variables.size(); j++) {
+
+                    for (int j = 0; j < contrainte.variables.size(); j++) {
                         min = -1;
-                        for (int k = 0; k < domains[constraint.variables[j]].size(); k++) {
-                            if (domains[constraint.variables[j]][k] > min) {
-                                min = domains[constraint.variables[j]][k];
-                                if (constraint.variables[j] == current) {
+                        for (int k = 0; k < vectDomaines[contrainte.variables[j]].size(); k++) {
+                            if (vectDomaines[contrainte.variables[j]][k] > min) {
+                                min = vectDomaines[contrainte.variables[j]][k];
+                                if (contrainte.variables[j] == current) {
                                     minCurrent = k;
                                 }
                             }
                         }
                         tmp += min;
                     }
-                    
-                    if (minCurrent != -1 && tmp > constraint.parameter) {
-                         domains[current].erase(domains[current].begin() + minCurrent);
+
+                    if (minCurrent != -1 && tmp > contrainte.parametre) {
+                         vectDomaines[current].erase(vectDomaines[current].begin() + minCurrent);
                     }
-                    
+
                     break;
 
-                    
-                    
-                    
+
+
+
                 // If it's a superior constraint
                 case 8:
-                    // In the case we do a reduction of domain, not all values are initialized so we need to skip those which are not initialize
-                    if (constraint.variables[0] == current || constraint.variables[1] == current) {
-                        
-                        // We check for the entire domain of each variable
-                        for (int l = 0; l < domains[constraint.variables[0]].size(); l++) {
-                            for (int m = 0; m < domains[constraint.variables[1]].size(); m++) {
-                                
+                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
+                    if (contrainte.variables[0] == current || contrainte.variables[1] == current) {
+
+                        // We test for the entire domain of each variable
+                        for (int l = 0; l < vectDomaines[contrainte.variables[0]].size(); l++) {
+                            for (int m = 0; m < vectDomaines[contrainte.variables[1]].size(); m++) {
+
                                 // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
-                                if (domains[constraint.variables[0]][l] < domains[constraint.variables[1]][m]) {
-                                    
-                                    if (constraint.variables[0] == current) {
-                                        domains[constraint.variables[1]].erase(domains[constraint.variables[1]].begin() + m);
+                                if (vectDomaines[contrainte.variables[0]][l] < vectDomaines[contrainte.variables[1]][m]) {
+
+                                    if (contrainte.variables[0] == current) {
+                                        vectDomaines[contrainte.variables[1]].erase(vectDomaines[contrainte.variables[1]].begin() + m);
                                         m--;
-                                        
-                                        if (find(fifo.begin(), fifo.end(), constraint.variables[1]) == fifo.end()) {
-                                            fifo.push_back(constraint.variables[1]);
+
+                                        if (find(fifo.begin(), fifo.end(), contrainte.variables[1]) == fifo.end()) {
+                                            fifo.push_back(contrainte.variables[1]);
                                         }
                                     } else {
-                                        domains[constraint.variables[0]].erase(domains[constraint.variables[0]].begin() + l);
+                                        vectDomaines[contrainte.variables[0]].erase(vectDomaines[contrainte.variables[0]].begin() + l);
                                         l--;
-                                        
-                                        if (find(fifo.begin(), fifo.end(), constraint.variables[0]) == fifo.end()) {
-                                            fifo.push_back(constraint.variables[0]);
+
+                                        if (find(fifo.begin(), fifo.end(), contrainte.variables[0]) == fifo.end()) {
+                                            fifo.push_back(contrainte.variables[0]);
                                         }
                                     }
-                                    
+
                                 }
-                                
+
                             }
                         }
-                        
+
                     }
                     break;
 
@@ -861,7 +860,7 @@ vector< vector< int > > Decision::RemoveInconsistentValues(int edge, vector< vec
         fifo.pop_back();
     }
 
-    return domains;
+    return vectDomaines;
 }
 
 
