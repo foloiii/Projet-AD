@@ -11,3 +11,34 @@
 	<vector>
 	<map>
 
+1526849301 source:c:\users\valentin\desktop\projet-ad-master\aidealadecision\aidealadecision\main.cpp
+	<iostream>
+	<sstream>
+	"decision.hpp"
+
+1526848168 c:\users\valentin\desktop\projet-ad-master\aidealadecision\aidealadecision\decision.hpp
+	<iostream>
+	<stdio.h>
+	<sstream>
+	<string>
+	<algorithm>
+	<vector>
+	<map>
+
+1526849932 source:c:\users\valentin\desktop\projet-ad-master\aidealadecision\aidealadecision\decision.cpp
+	"decision.hpp"
+	<fstream>
+
+1526849000 source:c:\users\valentin\desktop\projet-ad-master\aidealadecision\psc.cpp
+	"psc.hpp"
+	<fstream>
+
+1526849023 c:\users\valentin\desktop\projet-ad-master\aidealadecision\psc.hpp
+	<iostream>
+	<stdio.h>
+	<sstream>
+	<string>
+	<algorithm>
+	<vector>
+	<map>
+
