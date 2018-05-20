@@ -1,0 +1,19 @@
+# depslib dependency file v1.0
+1526855506 source:c:\users\valentin\desktop\d3\d3-main.cpp
+	<iostream>
+	<sstream>
+	"D3-psc.hpp"
+
+1526855111 c:\users\valentin\desktop\d3\d3-psc.hpp
+	<iostream>
+	<stdio.h>
+	<sstream>
+	<string>
+	<algorithm>
+	<vector>
+	<map>
+
+1526855681 source:c:\users\valentin\desktop\d3\d3-psc.cpp
+	"D3-psc.hpp"
+	<fstream>
+

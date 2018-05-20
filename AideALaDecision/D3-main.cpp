@@ -1,6 +1,6 @@
 #include <iostream>
 #include <sstream>
-#include "decision.hpp"
+#include "D3-psc.hpp"
 
 using namespace std;
 
@@ -32,25 +32,26 @@ int main(int argc, const char * argv[]) {
 
             switch (val) {
                 case 1:
-                    cout<< endl << endl << "-----Methode triviale-----" <<endl;
+                    cout<< endl << endl << "-> METHODE TRIVIALE" <<endl;
                     valFin = d.MethodeNaif(element, valFin);
                     d.afficherEtatFin(valFin);
+
                     break;
 
                 case 2:
-                    cout<< endl << endl << "-----Methode de reduction des domaines de valeurs-----" <<endl;
+                    cout<< endl << endl << "-> REDUCTION DE DOMAINES DE VALEURS" <<endl;
                     valFin = d.MethodeReductionDomaine(element, valFin);
                     d.afficherEtatFin(valFin);
                     break;
 
                 case 3:
-                    cout<< endl << endl << "-----Methode de variable la plus contrainte-----" <<endl;
+                    cout<< endl << endl << "-> VARIABLE LA PLUS CONTRAINTE" <<endl;
                     valFin = d.MethodeOptimisation(element, valFin);
                     d.afficherEtatFin(valFin);
                     break;
 
                 case 4:
-                    cout<< endl << endl << "-----Coherence d'arete-----" <<endl;
+                    cout<< endl << endl << "-> COHERENCE D'ARETE" <<endl;
                     valFin = d.MethodeCohe(element, valFin);
                     d.afficherEtatFin(valFin);
                     break;

@@ -1,4 +1,4 @@
-#include "decision.hpp"
+#include "D3-psc.hpp"
 #include <fstream>
 
 PSC::PSC() {
@@ -31,16 +31,17 @@ string PSC::getTypeContrainte(int type) {
         case 6:
             return ">";
         case 7:
-            return "Sum(Xi) <";
+            return "Somme(Xi) <";
         case 8:
             return ">=";
         case 9:
-            return "Sum(Xi) = Yi * Ai";
+            return "Somme(Xi) = Ai * Bi";
         default:
             return "";
     }
 }
 
+//fonction de lecture des fichier .txt
 void PSC::lecture(string const filepath) {
     ifstream file(filepath.c_str());
     string ligneActu;
@@ -104,8 +105,9 @@ void PSC::lecture(string const filepath) {
     }
 }
 
+//affichage du PSC non résolu
 void PSC::affichageEtatIni() {
-    cout<< "\n\n(1) Variables" << endl << endl;
+    cout<< "\n\n------ (1) Variables" << endl << endl;
 
 
     cout<< this->nbVariable << " variables" << endl;
@@ -113,7 +115,7 @@ void PSC::affichageEtatIni() {
         cout<< "x" << i << ", ";
     }
 
-    cout<< "\n\n(2) Domaines" << endl << endl;
+    cout<< "\n\n------ (2) Domaines" << endl << endl;
     for (int i = 0; i < this->nbVariable; i++) {
         cout<< "x" << i << " = { ";
 
@@ -125,7 +127,7 @@ void PSC::affichageEtatIni() {
 
 
 
-    cout<< endl << "(3) Contraintes :" << endl << endl;
+    cout<< endl << "------ (3) Contraintes :" << endl << endl;
 
     for (unsigned int i = 0; i < this->vectContrainte.size(); i++) {
         cout<< i << " - Contrainte : " << this->getTypeContrainte(this->vectContrainte[i].type) << " - variables : { ";
@@ -137,26 +139,27 @@ void PSC::affichageEtatIni() {
     }
 }
 
+//affichage du PSC résolu ou non
 void PSC::afficherEtatFin(Finale valFin) {
     if (!valFin.test) {
         cout<< endl << "! - Pas de resultat selon les contraintes."<< endl;
     } else {
         cout<< endl << "Resultat :" << endl;
         for (unsigned int i = 0; i < valFin.valFin.size(); i++) {
-            cout<< i << " = { " << valFin.valFin[i] << " }" << endl;
+            cout<<"x" <<i << " = " << valFin.valFin[i] << endl;
         }
     }
 
     cout<< endl << "Donnees: " << endl << this->bordAdd << " noeuds crees" << endl << this->arcOsef << " branches ignorees" << endl;
 }
 
-
+//ajout de domaine
 void PSC::addDomaine(int variable, int val){
     this->vectDomaines[variable - 1].push_back(val);
 }
 
+//ajout de contrainte
 void PSC::addContrainte(int contrainte, short type, int varDomaine, int parametre){
-    //We add the constraint structure containor of the domain if the contraint containor is too small
     if (this->vectContrainte.size() < (unsigned int)contrainte + 1) {
         Contrainte a;
         a.type = 0;
@@ -174,27 +177,24 @@ void PSC::addContrainte(int contrainte, short type, int varDomaine, int parametr
     }
 }
 
-
+//initialise les données
 void PSC::StatIni() {
     this->bordAdd = 0;
     this->arcOsef = 0;
 }
 
-
-
-
+//méthode naive
 Finale PSC::MethodeNaif(Noeu element, Finale valFin) {
 
-    //If it's a leaf we test the constraint, We know it's a leaf because the last variable is at the bottom of the tree
     if (element.variable == this->nbVariable - 1) {
         valFin.test = this->testContrainte(valFin);
         return valFin;
     }
 
-    //We get the nextVariable
+    //on va a la prochaine variable
     const int nextVariable = element.variable + 1;
 
-    //For each val of the domain of the variable, we create a Noeu and we make a recursive call, if the return of the Finale valFin is positive we return this couple of valFin because it's a solution
+    //pour chaque valeur du domaine on crée un noeud et on fait un appel recursif, si le return du dernier Valfin est positif on a une solution que l'on renvoie
     for (unsigned int i = 0; i < this->vectDomaines[nextVariable].size(); i++) {
         Noeu enfant;
         Finale fin;
@@ -211,8 +211,7 @@ Finale PSC::MethodeNaif(Noeu element, Finale valFin) {
             return fin;
         }
     }
-
-    //If we don't have already exit it's because there is no solution on this Noeu
+    //Si ca n'a pas quitté avant alors il n'y a pas de solution sur ce noeud
     valFin.test = false;
     return valFin;
 }
@@ -220,25 +219,20 @@ Finale PSC::MethodeNaif(Noeu element, Finale valFin) {
 
 bool PSC::testContrainte(Finale valFin, bool limit) {
 
-    // We test for every constraint on the valFin
     for (unsigned int i = 0; i < this->vectContrainte.size(); i++) {
         Contrainte contrainte = this->vectContrainte[i];
         int tmp, somme;
         bool bool1, bool2;
 
-        // Depending of the type of constraint
         switch (contrainte.type) {
 
-            // If it's an equal constraint, we test if the valFin are equals
             case 1:
                 for (unsigned int j = 0; j < contrainte.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
                         continue;
                     }
 
                     for (unsigned int k = 0; k < contrainte.variables.size(); k++) {
-                        // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                         if (limit && valFin.valFin.find(contrainte.variables[k]) == valFin.valFin.end()) {
                             continue;
                         }
@@ -254,16 +248,13 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
                 }
                 break;
 
-            // If it's an not equal constraint, we test if the valFin are not equals
             case 2:
                 for (unsigned int j = 0; j < contrainte.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
                         continue;
                     }
 
                     for (unsigned int k = 0; k < contrainte.variables.size(); k++) {
-                        // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                         if (limit && valFin.valFin.find(contrainte.variables[k]) == valFin.valFin.end()) {
                             continue;
                         }
@@ -279,9 +270,7 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
                 }
                 break;
 
-            // If it's an inferior constraint, we test if the valFin are inferior
             case 3:
-                // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                 if (!limit || (valFin.valFin.find(contrainte.variables[0]) != valFin.valFin.end() && valFin.valFin.find(contrainte.variables[1]) != valFin.valFin.end())) {
                     if (valFin.valFin[contrainte.variables[0]] > valFin.valFin[contrainte.variables[1]]) {
                         return false;
@@ -289,12 +278,10 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
                 }
                 break;
 
-            // Sum of all variables, we test if the total is equal to the parameter
             case 4:
                 tmp = 0;
                 bool1 = false;
                 for (unsigned int j = 0; j < contrainte.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
                         bool1 = true;
                         continue;
@@ -314,9 +301,7 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
 
                 break;
 
-            // If it's a strict inferior constraint, we test if the valFin are inferior
             case 5:
-                // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                 if (!limit || (valFin.valFin.find(contrainte.variables[0]) != valFin.valFin.end() && valFin.valFin.find(contrainte.variables[1]) != valFin.valFin.end())) {
                     if (valFin.valFin[contrainte.variables[0]] >= valFin.valFin[contrainte.variables[1]]) {
                         return false;
@@ -324,9 +309,7 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
                 }
                 break;
 
-            // If it's a strict superior constraint, we test if the valFin are superior
             case 6:
-                // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                 if (!limit || (valFin.valFin.find(contrainte.variables[0]) != valFin.valFin.end() && valFin.valFin.find(contrainte.variables[1]) != valFin.valFin.end())) {
                     if (valFin.valFin[contrainte.variables[0]] <= valFin.valFin[contrainte.variables[1]]) {
                         return false;
@@ -334,12 +317,10 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
                 }
                 break;
 
-            // Sum of all variables, we test if the total is inferior to the parametre
             case 7:
                 tmp = 0;
                 bool1 = false;
                 for (unsigned int j = 0; j < contrainte.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
                         bool1 = true;
                         continue;
@@ -359,9 +340,7 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
 
                 break;
 
-            // If it's a superior constraint, we test if the valFin are inferior
             case 8:
-                // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                 if (!limit || (valFin.valFin.find(contrainte.variables[0]) != valFin.valFin.end() && valFin.valFin.find(contrainte.variables[1]) != valFin.valFin.end())) {
                     if (valFin.valFin[contrainte.variables[0]] < valFin.valFin[contrainte.variables[1]]) {
                         return false;
@@ -370,14 +349,12 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
                 break;
 
 
-            // Sum of all variables, we test if the total is equal to the sum of the deuxiemeParti with a ponderation
             case 9:
                 tmp = 0;
                 somme = 0;
                 bool1 = false;
                 bool2 = false;
                 for (unsigned int j = 0; j < contrainte.variables.size(); j++) {
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (limit && valFin.valFin.find(contrainte.variables[j]) == valFin.valFin.end()) {
                         bool1 = true;
                         continue;
@@ -386,7 +363,6 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
                 }
 
                 for (const auto &element : contrainte.deuxiemeParti) {
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (limit && valFin.valFin.find(element.first) == valFin.valFin.end()) {
                         bool2 = true;
                         continue;
@@ -418,21 +394,19 @@ bool PSC::testContrainte(Finale valFin, bool limit) {
     return true;
 }
 
+//methode de reduction de domaine
 Finale PSC::MethodeReductionDomaine(Noeu element, Finale valFin) {
-    //If it's a leaf we test the constraint, We know it's a leaf because the last variable is at the bottom of the tree. And it's a solution because we pass all the reduction of domain
     if (element.variable == this->nbVariable - 1) {
         valFin.test = true;
         return valFin;
     }
 
-    //We get the nextVariable
     const int nextVariable = element.variable + 1;
     Noeu child;
     Finale temp;
     child.variable = nextVariable;
     temp = valFin;
 
-    //For each val of the domain of the variable, we create a Noeu and we test the constraint we can already test, if all the vectContrainte are satisfy we can make a recursive call
     for (unsigned int i = 0; i < this->vectDomaines[nextVariable].size(); i++) {
 
         child.val = this->vectDomaines[nextVariable][i];
@@ -452,13 +426,12 @@ Finale PSC::MethodeReductionDomaine(Noeu element, Finale valFin) {
 
     }
 
-    //If we don't have already exit it's because there is no solution on this Noeu
     valFin.test = false;
     return valFin;
 }
 
+//methode de variable la plus contrante
 Finale PSC::MethodeOptimisation(Noeu element, Finale valFin) {
-    //If it's a leaf we test the constraint, We know it's a leaf because the last variable is at the bottom of the tree. And it's a solution because we pass all the reduction of domain
     if ((unsigned int)valFin.valFin.size() == (unsigned int)this->nbVariable) {
         valFin.test = true;
         return valFin;
@@ -467,7 +440,6 @@ Finale PSC::MethodeOptimisation(Noeu element, Finale valFin) {
     int min = -1;
     int nextVariable = 0;
 
-    //We get the nextVariable
     for (int i = 0; i < this->nbVariable; i++) {
         if (valFin.valFin.find(i) == valFin.valFin.end() ) {
             if (min == -1 || (unsigned int)min > this->vectDomaines[i].size()) {
@@ -482,7 +454,6 @@ Finale PSC::MethodeOptimisation(Noeu element, Finale valFin) {
     child.variable = nextVariable;
     temp = valFin;
 
-    //For each val of the domain of the variable, we create a Noeu and we test the constraint we can already test, if all the vectContrainte are satisfy we can make a recursive call
     for (unsigned int i = 0; i < this->vectDomaines[nextVariable].size(); i++) {
 
         child.val = this->vectDomaines[nextVariable][i];
@@ -502,20 +473,18 @@ Finale PSC::MethodeOptimisation(Noeu element, Finale valFin) {
 
     }
 
-    //If we don't have already exit it's because there is no solution on this Noeu
     valFin.test = false;
     return valFin;
 }
 
+//Coherence d'arete
 Finale PSC::MethodeCohe(Noeu element, Finale valFin, vector< vector< int > > vectDomaines) {
 
-    //If it's a leaf we test the constraint, We know it's a leaf because the last variable is at the bottom of the tree. And it's a solution because we pass all the reduction of domain
     if (valFin.valFin.size() == (unsigned int)this->nbVariable) {
         valFin.test = true;
         return valFin;
     }
 
-    // If we don't have a vectDomaines it means that it's the first time the function is call
     if (vectDomaines.size() == 0) {
         vectDomaines = this->vectDomaines;
     }
@@ -523,7 +492,6 @@ Finale PSC::MethodeCohe(Noeu element, Finale valFin, vector< vector< int > > vec
     int min = -1;
     int nextVariable = 0;
 
-    //We get the nextVariable
     for (int i = 0; i < this->nbVariable; i++) {
 
         if (vectDomaines[i].size() == 0) {
@@ -544,23 +512,18 @@ Finale PSC::MethodeCohe(Noeu element, Finale valFin, vector< vector< int > > vec
     child.variable = nextVariable;
     temp = valFin;
 
-    // We make a copy of the domain in the case we don't find the good valFin at the first shoot (to do a backtracking)
     vector< vector< int > > old = vectDomaines;
 
-    //For each val of the domain of the variable, we create a Noeu and we test the constraint we can already test, if all the vectContrainte are satisfy we can make a recursive call
     for (unsigned int i = 0; i < old[nextVariable].size(); i++) {
 
         child.val = old[nextVariable][i];
         temp.valFin[nextVariable] = child.val;
 
-        // We reduce the domain of the variable at only the val we're testing
         vectDomaines[nextVariable] = vector< int >();
         vectDomaines[nextVariable].push_back(old[nextVariable][i]);
 
-        // We reduce the domain of all the neighboorhood of the variable, depending on the vectContrainte
-        vectDomaines = this->RemoveInconsistentvalFin(nextVariable, vectDomaines);
+        vectDomaines = this->SuppInc(nextVariable, vectDomaines);
 
-        // We test all the vectContrainte (especially sum that are not tested in the removeinconsistenvalFin)
         if (this->testContrainte(temp, true)) {
             temp = MethodeCohe(child, temp, vectDomaines);
             this->bordAdd++;
@@ -572,18 +535,16 @@ Finale PSC::MethodeCohe(Noeu element, Finale valFin, vector< vector< int > > vec
             this->arcOsef++;
         }
 
-        // We do backtracking in case the vectContrainte in the sub-tree was not fullfill
         vectDomaines = old;
 
 
     }
 
-    //If we don't have already exit it's because there is no solution on this Noeu
     valFin.test = false;
     return valFin;
 }
 
-vector< vector< int > > PSC::RemoveInconsistentvalFin(int edge, vector< vector< int > > vectDomaines) {
+vector< vector< int > > PSC::SuppInc(int edge, vector< vector< int > > vectDomaines) {
 
     vector< int > fifo;
     fifo.push_back(edge);
@@ -591,36 +552,28 @@ vector< vector< int > > PSC::RemoveInconsistentvalFin(int edge, vector< vector< 
     while (!fifo.empty()) {
 
 
-        // We test for every constraint on the valFin
         for (unsigned int i = 0; i < this->vectContrainte.size(); i++) {
             Contrainte contrainte = this->vectContrainte[i];
             int current = fifo.front();
             int tmp, min, minCurrent;
 
-            // If the constraint doesn't include the edge we're testing we pass this constraint
             if (find(contrainte.variables.begin(), contrainte.variables.end(), current) == contrainte.variables.end()) {
                 continue;
             }
 
-            // Depending of the type of constraint
             switch (contrainte.type) {
 
-                // If it's an equal constraint
                 case 1:
-                    // We're testin for all the vectContrainte of variables
                     for (unsigned int j = 0; j < contrainte.variables.size(); j++) {
                         for (unsigned int k = 0; k < contrainte.variables.size(); k++) {
 
-                            // We test that one variable is the current variable
                             if (j == k || (contrainte.variables[j] != current && contrainte.variables[k] != current)) {
                                 continue;
                             }
 
-                            // We test for the entire domain of each
                             for (unsigned int l = 0; l < vectDomaines[contrainte.variables[j]].size(); l++) {
                                 for (unsigned int m = 0; m < vectDomaines[contrainte.variables[k]].size(); m++) {
 
-                                    // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
                                     if (vectDomaines[contrainte.variables[j]][l] != vectDomaines[contrainte.variables[k]][m]) {
 
                                         if (contrainte.variables[j] == current) {
@@ -648,23 +601,18 @@ vector< vector< int > > PSC::RemoveInconsistentvalFin(int edge, vector< vector< 
                     break;
 
 
-                // If it's a not equal constraint
                 case 2:
-                    // We're testin for all the vectContrainte of variables
                     for (unsigned int j = 0; j < contrainte.variables.size(); j++) {
                         for (unsigned int k = 0; k < contrainte.variables.size(); k++) {
 
-                            // We test that one variable is the current variable
                             if (j == k || (contrainte.variables[j] != current && contrainte.variables[k] != current)) {
                                 continue;
                             }
 
-                            // We test for the entire domain of each
                             for (unsigned int l = 0; l < vectDomaines[contrainte.variables[j]].size(); l++) {
                                 for (unsigned int m = 0; m < vectDomaines[contrainte.variables[k]].size(); m++) {
 
-                                    // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
-                                    if (vectDomaines[contrainte.variables[j]][l] == vectDomaines[contrainte.variables[k]][m]) {
+                                      if (vectDomaines[contrainte.variables[j]][l] == vectDomaines[contrainte.variables[k]][m]) {
 
                                         if (contrainte.variables[j] == current) {
                                             vectDomaines[contrainte.variables[k]].erase(vectDomaines[contrainte.variables[k]].begin() + m);
@@ -690,17 +638,13 @@ vector< vector< int > > PSC::RemoveInconsistentvalFin(int edge, vector< vector< 
                     }
                     break;
 
-                // If it's an inferior constraint
                 case 3:
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (contrainte.variables[0] == current || contrainte.variables[1] == current) {
 
-                        // We test for the entire domain of each variable
                         for (unsigned int l = 0; l < vectDomaines[contrainte.variables[0]].size(); l++) {
                             for (unsigned int m = 0; m < vectDomaines[contrainte.variables[1]].size(); m++) {
 
-                                // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
-                                if (vectDomaines[contrainte.variables[0]][l] > vectDomaines[contrainte.variables[1]][m]) {
+                                 if (vectDomaines[contrainte.variables[0]][l] > vectDomaines[contrainte.variables[1]][m]) {
 
                                     if (contrainte.variables[0] == current) {
                                         vectDomaines[contrainte.variables[1]].erase(vectDomaines[contrainte.variables[1]].begin() + m);
@@ -726,16 +670,12 @@ vector< vector< int > > PSC::RemoveInconsistentvalFin(int edge, vector< vector< 
                     }
                     break;
 
-                // If it's a strict inferior constraint
                 case 5:
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (contrainte.variables[0] == current || contrainte.variables[1] == current) {
 
-                        // We test for the entire domain of each variable
                         for (unsigned int l = 0; l < vectDomaines[contrainte.variables[0]].size(); l++) {
                             for (unsigned int m = 0; m < vectDomaines[contrainte.variables[1]].size(); m++) {
 
-                                // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
                                 if (vectDomaines[contrainte.variables[0]][l] >= vectDomaines[contrainte.variables[1]][m]) {
 
                                     if (contrainte.variables[0] == current) {
@@ -762,16 +702,12 @@ vector< vector< int > > PSC::RemoveInconsistentvalFin(int edge, vector< vector< 
                     }
                     break;
 
-                // If it's a strict superior constraint
                 case 6:
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (contrainte.variables[0] == current || contrainte.variables[1] == current) {
 
-                        // We test for the entire domain of each variable
                         for (unsigned int l = 0; l < vectDomaines[contrainte.variables[0]].size(); l++) {
                             for (unsigned int m = 0; m < vectDomaines[contrainte.variables[1]].size(); m++) {
 
-                                // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
                                 if (vectDomaines[contrainte.variables[0]][l] <= vectDomaines[contrainte.variables[1]][m]) {
 
                                     if (contrainte.variables[0] == current) {
@@ -799,7 +735,6 @@ vector< vector< int > > PSC::RemoveInconsistentvalFin(int edge, vector< vector< 
                     break;
 
 
-                // If it's a inferior sum constraint
                 case 7:
                     tmp = 0;
                     minCurrent = -1;
@@ -824,18 +759,12 @@ vector< vector< int > > PSC::RemoveInconsistentvalFin(int edge, vector< vector< 
                     break;
 
 
-
-
-                // If it's a superior constraint
                 case 8:
-                    // In the case we do a reduction of domain, not all valFin are initialized so we need to skip those which are not initialize
                     if (contrainte.variables[0] == current || contrainte.variables[1] == current) {
 
-                        // We test for the entire domain of each variable
                         for (unsigned int l = 0; l < vectDomaines[contrainte.variables[0]].size(); l++) {
                             for (unsigned int m = 0; m < vectDomaines[contrainte.variables[1]].size(); m++) {
 
-                                // Depending of which is the current variable, we reduce the domain of the other and add the other variable to the queue, only if the variable doesn't respect the contraint
                                 if (vectDomaines[contrainte.variables[0]][l] < vectDomaines[contrainte.variables[1]][m]) {
 
                                     if (contrainte.variables[0] == current) {
@@ -875,5 +804,3 @@ vector< vector< int > > PSC::RemoveInconsistentvalFin(int edge, vector< vector< 
 
     return vectDomaines;
 }
-
-

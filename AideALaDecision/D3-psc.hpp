@@ -46,7 +46,7 @@ public:
     Finale MethodeReductionDomaine(Noeu element, Finale valFin);
     Finale MethodeOptimisation(Noeu element, Finale valFin);
     Finale MethodeCohe(Noeu element, Finale valFin, vector< vector< int > > vectDomaines = vector< vector< int > >());
-    vector< vector< int > > RemoveInconsistentvalFin(int edge, vector< vector< int > > vectDomaines);
+    vector< vector< int > > SuppInc(int edge, vector< vector< int > > vectDomaines);
 
 private:
     int nbVariable;
@@ -57,4 +57,3 @@ private:
 };
 
 #endif
-
