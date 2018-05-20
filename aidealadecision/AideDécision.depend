@@ -1,0 +1,13 @@
+# depslib dependency file v1.0
+1492272222 source:\\psf\home\documents\cours\semestre 6\aide à la décision\aidealadecision\aidealadecision\main.cpp
+	<iostream>
+	"decision.hpp"
+
+1492272673 \\psf\home\documents\cours\semestre 6\aide à la décision\aidealadecision\aidealadecision\decision.hpp
+	<iostream>
+	<stdio.h>
+	<sstream>
+	<string>
+	<vector>
+	<map>
+
